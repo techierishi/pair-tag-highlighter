@@ -21,18 +21,15 @@ gint findOpeningBrace(gint position, gint lineStart)
 {
     gint openingBrace = -1;
     gint pos;
-    for(pos=position; pos>=lineStart; pos--)
+    for(pos=position-1; pos>=lineStart; pos--)
     {
-        gchar charAtCurPosition = sci_get_char_at(sci, pos-1);
+        gchar charAtCurPosition = sci_get_char_at(sci, pos);
         if ('<' == charAtCurPosition)
         {
             openingBrace = pos;
             break;
         }
     }
-    /* if opening brace is not found in the line, we're not inside tag */
-    if (-1 != openingBrace)
-        openingBrace = pos;
 
     return openingBrace;
 }
@@ -52,9 +49,6 @@ gint findClosingBrace(gint position, gint lineEnd)
             break;
         }
     }
-    /* if closing brace is not found in the line, we're not inside tag */
-    if (-1 != closingBrace)
-        closingBrace = pos;
 
     return closingBrace;
 }
@@ -64,6 +58,58 @@ void highlight_tag(gint openingBrace, gint closingBrace)
     scintilla_send_message(sci, SCI_STARTSTYLING, openingBrace-1, 0x1f);
     scintilla_send_message(sci, SCI_SETSTYLING, closingBrace-openingBrace+2, 36);
     scintilla_send_message(sci, SCI_STYLESETBOLD, closingBrace-openingBrace+2, 1);
+}
+
+gboolean is_tag_self_closing(gint closingBrace)
+{
+    gboolean isTagSelfClosing = FALSE;
+    gchar charBeforeBrace = sci_get_char_at(sci, closingBrace-1);
+    if ('/' == charBeforeBrace)
+        isTagSelfClosing = TRUE;
+    return isTagSelfClosing;
+}
+
+gboolean is_tag_opening(openingBrace)
+{
+    gboolean isTagOpening = TRUE;
+    gchar charAfterBrace = sci_get_char_at(sci, openingBrace+1);
+    if ('/' == charAfterBrace)
+        isTagOpening = FALSE;
+    return isTagOpening;
+}
+
+void get_tag_name(gint openingBrace, gint closingBrace,
+                    gchar tagName[], gboolean isTagOpening)
+{
+    gint nameStart = openingBrace + (TRUE == isTagOpening ? 1 : 2);
+    gint nameEnd = nameStart;
+    gchar charAtCurPosition;
+    while (' ' != charAtCurPosition && '>' != charAtCurPosition)
+    {
+        charAtCurPosition = sci_get_char_at(sci, nameEnd);
+        nameEnd++;
+    }
+    sci_get_text_range(sci, nameStart, nameEnd-1, tagName);
+}
+
+void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace)
+{
+}
+
+void findMatchingClosingTag(gchar *tagName, gint openingBrace, gint closingBrace)
+{
+}
+
+void findMatchingTag(openingBrace, closingBrace)
+{
+    gchar tagName[64];
+    gboolean isTagOpening = is_tag_opening(openingBrace);
+    get_tag_name(openingBrace, closingBrace, tagName, isTagOpening);
+
+    //if(TRUE == isTagOpening)
+    //    findMatchingOpeningTag(tagName, openingBrace, closingBrace);
+    //else
+    //    findMatchingClosingTag(tagName, openingBrace, closingBrace);
 }
 
 void run_tag_highlighter()
@@ -81,6 +127,10 @@ void run_tag_highlighter()
     /* Highlight current tag. Matching tag will be highlighted from
      * findMatchingTag() functiong */
     highlight_tag(openingBrace, closingBrace);
+
+    /* Find matching tag only if a tag is not self-closing */
+    if (FALSE == is_tag_self_closing(closingBrace))
+        findMatchingTag(openingBrace, closingBrace);
 }
 
 /* Notification handler for editor-notify */
