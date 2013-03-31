@@ -1,0 +1,8 @@
+# Generic files
+*~
+*.lock
+*.swp
+
+# Project specific
+*.so
+*.o
