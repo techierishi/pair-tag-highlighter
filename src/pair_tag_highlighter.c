@@ -15,49 +15,52 @@ PLUGIN_SET_INFO("Pair Tag Highlighter", "Finds and highlights matching \
                 opening/closing HTML tag", "1.0", 
                 "Volodymyr Kononenko <vm@kononenko.ws>");
 
-/* searches openging tag brace to the left: from the current cursor
- * position to the start of the line. */
-gint findOpeningBrace(gint position, gint lineStart)
+/* Searches tag braces.
+ * direction variable shows sets search direction:
+ * TRUE  - to the right
+ * FALSE - to the left
+ * from the current cursor position to the start of the line.
+ */
+gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, gboolean direction)
 {
-    gint openingBrace = -1;
+    gint foundBrace = -1;
     gint pos;
-    for(pos=position-1; pos>=lineStart; pos--)
+
+    if (TRUE == direction)
     {
-        gchar charAtCurPosition = sci_get_char_at(sci, pos);
-        if ('<' == charAtCurPosition)
+        /* search to the right */
+        for(pos=position; pos<=endOfSearchPos; pos++)
         {
-            openingBrace = pos;
-            break;
+            gchar charAtCurPosition = sci_get_char_at(sci, pos);
+            if (charAtCurPosition == searchedBrace)
+            {
+                foundBrace = pos;
+                break;
+            }
+        }
+    }
+    else
+    {
+        /* search to the left */
+        for(pos=position; pos>=endOfSearchPos; pos--)
+        {
+            gchar charAtCurPosition = sci_get_char_at(sci, pos);
+            if (charAtCurPosition == searchedBrace)
+            {
+                foundBrace = pos;
+                break;
+            }
         }
     }
 
-    return openingBrace;
-}
-
-/* searches closing tag brace to the right: from the current cursor
- * position to the end of the line. */
-gint findClosingBrace(gint position, gint lineEnd)
-{
-    gint closingBrace = -1;
-    gint pos;
-    for(pos=position; pos<=lineEnd; pos++)
-    {
-        gchar charAtCurPosition = sci_get_char_at(sci, pos);
-        if ('>' == charAtCurPosition)
-        {
-            closingBrace = pos;
-            break;
-        }
-    }
-
-    return closingBrace;
+    return foundBrace;
 }
 
 void highlight_tag(gint openingBrace, gint closingBrace)
 {
-    scintilla_send_message(sci, SCI_STARTSTYLING, openingBrace-1, 0x1f);
-    scintilla_send_message(sci, SCI_SETSTYLING, closingBrace-openingBrace+2, 36);
-    scintilla_send_message(sci, SCI_STYLESETBOLD, closingBrace-openingBrace+2, 1);
+    scintilla_send_message(sci, SCI_STARTSTYLING, openingBrace, 0x1f);
+    scintilla_send_message(sci, SCI_SETSTYLING, closingBrace-openingBrace+1, 36);
+    scintilla_send_message(sci, SCI_STYLESETBOLD, closingBrace-openingBrace+1, 1);
 }
 
 gboolean is_tag_self_closing(gint closingBrace)
@@ -118,8 +121,8 @@ void run_tag_highlighter()
     gint lineNumber = sci_get_current_line(sci);
     gint lineStart = sci_get_position_from_line(sci, lineNumber);
     gint lineEnd = sci_get_line_end_position(sci, lineNumber);
-    gint openingBrace = findOpeningBrace(position, lineStart);
-    gint closingBrace = findClosingBrace(position, lineEnd);
+    gint openingBrace = findBrace(position, lineStart, '<', FALSE);
+    gint closingBrace = findBrace(position, lineEnd, '>', TRUE);
 
     if (-1 == openingBrace || -1 == closingBrace)
         return;
