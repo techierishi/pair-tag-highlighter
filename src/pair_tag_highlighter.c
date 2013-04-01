@@ -2,6 +2,8 @@
 #include "Scintilla.h"      // for the SCNotification struct
 #include "SciLexer.h"
 
+#define INDICATOR_TAGMATCH 100
+
 /* These items are set by Geany before plugin_init() is called. */
 GeanyPlugin     *geany_plugin;
 GeanyData       *geany_data;
@@ -21,7 +23,8 @@ PLUGIN_SET_INFO("Pair Tag Highlighter", "Finds and highlights matching \
  * FALSE - to the left
  * from the current cursor position to the start of the line.
  */
-gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, gboolean direction)
+gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, 
+                gchar breakBrace, gboolean direction)
 {
     gint foundBrace = -1;
     gint pos;
@@ -37,6 +40,8 @@ gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, gboolean
                 foundBrace = pos;
                 break;
             }
+            if (charAtCurPosition == breakBrace)
+                break;
         }
     }
     else
@@ -50,6 +55,8 @@ gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, gboolean
                 foundBrace = pos;
                 break;
             }
+            if (charAtCurPosition == breakBrace)
+                break;
         }
     }
 
@@ -58,9 +65,9 @@ gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace, gboolean
 
 void highlight_tag(gint openingBrace, gint closingBrace)
 {
-    scintilla_send_message(sci, SCI_STARTSTYLING, openingBrace, 0x1f);
-    scintilla_send_message(sci, SCI_SETSTYLING, closingBrace-openingBrace+1, 36);
-    scintilla_send_message(sci, SCI_STYLESETBOLD, closingBrace-openingBrace+1, 1);
+    scintilla_send_message(sci, SCI_INDICSETSTYLE, INDICATOR_TAGMATCH, INDIC_ROUNDBOX);
+    scintilla_send_message(sci, SCI_INDICSETALPHA, INDICATOR_TAGMATCH, 60);
+    scintilla_send_message(sci, SCI_INDICATORFILLRANGE, openingBrace, closingBrace-openingBrace+1);
 }
 
 gboolean is_tag_self_closing(gint closingBrace)
@@ -111,8 +118,8 @@ void findMatchingClosingTag(gchar *tagName, gint openingBrace)
     for (pos=openingBrace+1; pos<endOfDocument; pos++)
     {
         /* are we inside tag? */
-        gint matchingOpeningBrace = findBrace(pos, endOfDocument, '<', TRUE);
-        gint matchingClosingBrace = findBrace(pos, endOfDocument, '>', TRUE);
+        gint matchingOpeningBrace = findBrace(pos, endOfDocument, '<', NULL, TRUE);
+        gint matchingClosingBrace = findBrace(pos, endOfDocument, '>', NULL, TRUE);
 
         if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
         {
@@ -155,8 +162,8 @@ void run_tag_highlighter()
     gint lineNumber = sci_get_current_line(sci);
     gint lineStart = sci_get_position_from_line(sci, lineNumber);
     gint lineEnd = sci_get_line_end_position(sci, lineNumber);
-    gint openingBrace = findBrace(position, lineStart, '<', FALSE);
-    gint closingBrace = findBrace(position, lineEnd, '>', TRUE);
+    gint openingBrace = findBrace(position, lineStart, '<', '>', FALSE);
+    gint closingBrace = findBrace(position, lineEnd, '>', '<', TRUE);
 
     if (-1 == openingBrace || -1 == closingBrace)
         return;
@@ -178,6 +185,9 @@ static gboolean on_editor_notify(GObject *obj, GeanyEditor *editor,
 
     /* setting global sci variable to be available in other functions */
     sci = editor->sci;
+
+    scintilla_send_message(sci, SCI_SETINDICATORCURRENT, INDICATOR_TAGMATCH, 0);
+
     lexer = sci_get_lexer(sci);
     if (lexer != SCLEX_HTML && lexer != SCLEX_XML)
     {
