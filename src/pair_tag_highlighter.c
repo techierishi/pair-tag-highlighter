@@ -2,7 +2,7 @@
 #include "Scintilla.h"      // for the SCNotification struct
 #include "SciLexer.h"
 
-#define INDICATOR_TAGMATCH 100
+#define INDICATOR_TAGMATCH 0
 
 /* These items are set by Geany before plugin_init() is called. */
 GeanyPlugin     *geany_plugin;
@@ -10,6 +10,10 @@ GeanyData       *geany_data;
 GeanyFunctions  *geany_functions;
 
 ScintillaObject *sci;
+
+/* Is needed for clearing highlighting after moving cursor out
+ * from the tag */
+gint highlightedBraces[] = {0, 0, 0, 0};
 
 PLUGIN_VERSION_CHECK(211)
 
@@ -63,11 +67,28 @@ gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace,
     return foundBrace;
 }
 
+/* The intensity of each colour is set in the range 0 to 255.
+ * If you have three such intensities, they are combined as:
+ * red | (green << 8) | (blue << 16)*/
+unsigned long createRGB(int r, int g, int b)
+{
+    return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+}
+
 void highlight_tag(gint openingBrace, gint closingBrace)
 {
-    scintilla_send_message(sci, SCI_INDICSETSTYLE, INDICATOR_TAGMATCH, INDIC_ROUNDBOX);
+    scintilla_send_message(sci, SCI_INDICSETSTYLE,
+                            INDICATOR_TAGMATCH, INDIC_ROUNDBOX);
+    scintilla_send_message(sci, SCI_INDICSETFORE,
+                            0, createRGB(0, 208, 0)); // green #00d000
     scintilla_send_message(sci, SCI_INDICSETALPHA, INDICATOR_TAGMATCH, 60);
-    scintilla_send_message(sci, SCI_INDICATORFILLRANGE, openingBrace, closingBrace-openingBrace+1);
+    scintilla_send_message(sci, SCI_INDICATORFILLRANGE,
+                            openingBrace, closingBrace-openingBrace+1);
+}
+
+void clear_previous_highlighting(gint rangeStart, gint rangeEnd)
+{
+    scintilla_send_message(sci, SCI_INDICATORCLEARRANGE, rangeStart, rangeEnd+1);
 }
 
 gboolean is_tag_self_closing(gint closingBrace)
@@ -106,7 +127,7 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace
 {
 }
 
-void findMatchingClosingTag(gchar *tagName, gint openingBrace)
+void findMatchingClosingTag(gchar *tagName, gint openingBrace,  gint closingBrace)
 {
     gint pos;
     gint lineNumber = sci_get_current_line(sci);
@@ -139,6 +160,8 @@ void findMatchingClosingTag(gchar *tagName, gint openingBrace)
         {
             /* matching tag is found */
             highlight_tag(matchingOpeningBrace, matchingClosingBrace);
+            highlightedBraces[2] = matchingOpeningBrace;
+            highlightedBraces[3] = matchingClosingBrace;
             break;
         }
     }
@@ -151,7 +174,7 @@ void findMatchingTag(openingBrace, closingBrace)
     get_tag_name(openingBrace, closingBrace, tagName, isTagOpening);
 
     if(TRUE == isTagOpening)
-        findMatchingClosingTag(tagName, openingBrace);
+        findMatchingClosingTag(tagName, openingBrace, closingBrace);
     //else
     //    findMatchingClosingTag(tagName, openingBrace, closingBrace);
 }
@@ -166,7 +189,27 @@ void run_tag_highlighter()
     gint closingBrace = findBrace(position, lineEnd, '>', '<', TRUE);
 
     if (-1 == openingBrace || -1 == closingBrace)
+    {
+        int i;
+        for (i=0; i<3; i++)
+            highlightedBraces[i] = 0;
+        isCursorInsideTag = FALSE;
+        clear_previous_highlighting(highlightedBraces[0], highlightedBraces[1]);
+        clear_previous_highlighting(highlightedBraces[2], highlightedBraces[3]);
         return;
+    }
+
+    isCursorInsideTag = TRUE;
+
+    if (openingBrace != highlightedBraces[0] ||
+        closingBrace != highlightedBraces[1])
+    {
+        clear_previous_highlighting(highlightedBraces[0], highlightedBraces[1]);
+        clear_previous_highlighting(highlightedBraces[2], highlightedBraces[3]);
+    }
+
+    highlightedBraces[0] = openingBrace;
+    highlightedBraces[1] = closingBrace;
 
     /* Highlight current tag. Matching tag will be highlighted from
      * findMatchingTag() functiong */
