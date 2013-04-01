@@ -99,8 +99,42 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace
 {
 }
 
-void findMatchingClosingTag(gchar *tagName, gint openingBrace, gint closingBrace)
+void findMatchingClosingTag(gchar *tagName, gint openingBrace)
 {
+    gint pos;
+    gint lineNumber = sci_get_current_line(sci);
+    gint linesInDocument = sci_get_line_count(sci);
+    gint endOfDocument = sci_get_position_from_line(sci, linesInDocument);
+    gint openingTagsCount = 1;
+    gint closingTagsCount = 0;
+
+    for (pos=openingBrace+1; pos<endOfDocument; pos++)
+    {
+        /* are we inside tag? */
+        gint matchingOpeningBrace = findBrace(pos, endOfDocument, '<', TRUE);
+        gint matchingClosingBrace = findBrace(pos, endOfDocument, '>', TRUE);
+
+        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
+        {
+            /* we are inside of some tag. Let us check what tag*/
+            gchar matchingTagName[64];
+            gboolean isMatchingTagOpening = is_tag_opening(matchingOpeningBrace);
+            get_tag_name(matchingOpeningBrace, matchingClosingBrace, matchingTagName, isMatchingTagOpening);
+            if (strcmp(tagName, matchingTagName) == 0)
+            {
+                if (TRUE == isMatchingTagOpening)
+                    openingTagsCount++;
+                else
+                    closingTagsCount++;
+            }
+        }
+        if(openingTagsCount == closingTagsCount)
+        {
+            /* matching tag is found */
+            highlight_tag(matchingOpeningBrace, matchingClosingBrace);
+            break;
+        }
+    }
 }
 
 void findMatchingTag(openingBrace, closingBrace)
@@ -109,8 +143,8 @@ void findMatchingTag(openingBrace, closingBrace)
     gboolean isTagOpening = is_tag_opening(openingBrace);
     get_tag_name(openingBrace, closingBrace, tagName, isTagOpening);
 
-    //if(TRUE == isTagOpening)
-    //    findMatchingOpeningTag(tagName, openingBrace, closingBrace);
+    if(TRUE == isTagOpening)
+        findMatchingClosingTag(tagName, openingBrace);
     //else
     //    findMatchingClosingTag(tagName, openingBrace, closingBrace);
 }
