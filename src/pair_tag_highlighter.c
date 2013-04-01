@@ -127,7 +127,7 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace
 {
 }
 
-void findMatchingClosingTag(gchar *tagName, gint openingBrace,  gint closingBrace)
+void findMatchingClosingTag(gchar *tagName, gint closingBrace)
 {
     gint pos;
     gint lineNumber = sci_get_current_line(sci);
@@ -136,7 +136,7 @@ void findMatchingClosingTag(gchar *tagName, gint openingBrace,  gint closingBrac
     gint openingTagsCount = 1;
     gint closingTagsCount = 0;
 
-    for (pos=openingBrace+1; pos<endOfDocument; pos++)
+    for (pos=closingBrace; pos<endOfDocument; pos++)
     {
         /* are we inside tag? */
         gint matchingOpeningBrace = findBrace(pos, endOfDocument, '<', NULL, TRUE);
@@ -155,6 +155,7 @@ void findMatchingClosingTag(gchar *tagName, gint openingBrace,  gint closingBrac
                 else
                     closingTagsCount++;
             }
+            pos = matchingClosingBrace;
         }
         if(openingTagsCount == closingTagsCount)
         {
@@ -174,7 +175,7 @@ void findMatchingTag(openingBrace, closingBrace)
     get_tag_name(openingBrace, closingBrace, tagName, isTagOpening);
 
     if(TRUE == isTagOpening)
-        findMatchingClosingTag(tagName, openingBrace, closingBrace);
+        findMatchingClosingTag(tagName, closingBrace);
     //else
     //    findMatchingClosingTag(tagName, openingBrace, closingBrace);
 }
@@ -193,13 +194,10 @@ void run_tag_highlighter()
         int i;
         for (i=0; i<3; i++)
             highlightedBraces[i] = 0;
-        isCursorInsideTag = FALSE;
         clear_previous_highlighting(highlightedBraces[0], highlightedBraces[1]);
         clear_previous_highlighting(highlightedBraces[2], highlightedBraces[3]);
         return;
     }
-
-    isCursorInsideTag = TRUE;
 
     if (openingBrace != highlightedBraces[0] ||
         closingBrace != highlightedBraces[1])
