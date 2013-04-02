@@ -13,6 +13,7 @@
 #include "SciLexer.h"
 
 #define INDICATOR_TAGMATCH 0
+#define MAX_TAG_NAME 64
 
 /* These items are set by Geany before plugin_init() is called. */
 GeanyPlugin     *geany_plugin;
@@ -129,6 +130,8 @@ void get_tag_name(gint openingBracket, gint closingBracket,
     {
         charAtCurPosition = sci_get_char_at(sci, nameEnd);
         nameEnd++;
+        if (nameEnd-nameStart > MAX_TAG_NAME)
+            break;
     }
     sci_get_text_range(sci, nameStart, nameEnd-1, tagName);
 }
@@ -151,7 +154,7 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBracket)
             && (matchingClosingBracket > matchingOpeningBracket))
         {
             /* we are inside of some tag. Let us check what tag*/
-            gchar matchingTagName[64];
+            gchar matchingTagName[MAX_TAG_NAME];
             gboolean isMatchingTagOpening = is_tag_opening(matchingOpeningBracket);
             get_tag_name(matchingOpeningBracket, matchingClosingBracket,
                             matchingTagName, isMatchingTagOpening);
@@ -237,7 +240,7 @@ void findMatchingClosingTag(gchar *tagName, gint closingBracket)
 
 void findMatchingTag(openingBracket, closingBracket)
 {
-    gchar tagName[64];
+    gchar tagName[MAX_TAG_NAME];
     gboolean isTagOpening = is_tag_opening(openingBracket);
     get_tag_name(openingBracket, closingBracket, tagName, isTagOpening);
 
