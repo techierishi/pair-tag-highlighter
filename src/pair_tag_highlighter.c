@@ -289,7 +289,7 @@ static gboolean on_editor_notify(GObject *obj, GeanyEditor *editor,
     scintilla_send_message(sci, SCI_SETINDICATORCURRENT, INDICATOR_TAGMATCH, 0);
 
     lexer = sci_get_lexer(sci);
-    if (lexer != SCLEX_HTML && lexer != SCLEX_XML)
+    if (lexer != SCLEX_HTML)
     {
         return FALSE;
     }
