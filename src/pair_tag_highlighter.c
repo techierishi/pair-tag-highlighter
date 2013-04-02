@@ -138,8 +138,10 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
     for (pos=closingBrace; pos<endOfDocument; pos++)
     {
         /* are we inside tag? */
-        gint matchingOpeningBrace = findBrace(pos, endOfDocument, '<', NULL, TRUE);
-        gint matchingClosingBrace = findBrace(pos, endOfDocument, '>', NULL, TRUE);
+        gint lineNumber = sci_get_line_from_position(sci, pos);
+        gint lineEnd = sci_get_line_end_position(sci, lineNumber);
+        gint matchingOpeningBrace = findBrace(pos, lineEnd, '<', NULL, TRUE);
+        gint matchingClosingBrace = findBrace(pos, lineEnd, '>', NULL, TRUE);
 
         if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
         {
@@ -157,7 +159,8 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
             pos = matchingClosingBrace;
         }
         /* Speed up search: if findBrace returns -1, that means end of line
-         * is reached. Jump to the end of line */
+         * is reached. There is no need to go through the same positions again.
+         * Jump to the end of line */
         else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
         {
             gint lineNumber = sci_get_line_from_position(sci, pos);
