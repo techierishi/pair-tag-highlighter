@@ -199,8 +199,8 @@ void findMatchingClosingTag(gchar *tagName, gint closingBracket)
         /* are we inside tag? */
         gint lineNumber = sci_get_line_from_position(sci, pos);
         gint lineEnd = sci_get_line_end_position(sci, lineNumber);
-        gint matchingOpeningBracket = findBracket(pos, lineEnd, '<', NULL, TRUE);
-        gint matchingClosingBracket = findBracket(pos, lineEnd, '>', NULL, TRUE);
+        gint matchingOpeningBracket = findBracket(pos, endOfDocument, '<', NULL, TRUE);
+        gint matchingClosingBracket = findBracket(pos, endOfDocument, '>', NULL, TRUE);
 
         if (-1 != matchingOpeningBracket && -1 != matchingClosingBracket
             && (matchingClosingBracket > matchingOpeningBracket))
