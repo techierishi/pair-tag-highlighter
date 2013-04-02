@@ -157,7 +157,7 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace)
         /* Speed up search: if findBrace returns -1, that means start of line
          * is reached. There is no need to go through the same positions again.
          * Jump to the start of line */
-        else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
+        else if (-1 == matchingOpeningBrace || -1 == matchingClosingBrace)
         {
             pos = lineStart;
             continue;
@@ -209,7 +209,7 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
         /* Speed up search: if findBrace returns -1, that means end of line
          * is reached. There is no need to go through the same positions again.
          * Jump to the end of line */
-        else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
+        else if (-1 == matchingOpeningBrace || -1 == matchingClosingBrace)
         {
             pos = lineEnd;
             continue;
