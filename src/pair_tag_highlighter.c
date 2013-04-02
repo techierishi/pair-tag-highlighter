@@ -211,8 +211,6 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
          * Jump to the end of line */
         else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
         {
-            gint lineNumber = sci_get_line_from_position(sci, pos);
-            gint lineEnd = sci_get_line_end_position(sci, lineNumber);
             pos = lineEnd;
             continue;
         }
