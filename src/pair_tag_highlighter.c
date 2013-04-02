@@ -123,8 +123,52 @@ void get_tag_name(gint openingBrace, gint closingBrace,
     sci_get_text_range(sci, nameStart, nameEnd-1, tagName);
 }
 
-void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace)
+void findMatchingOpeningTag(gchar *tagName, gint openingBrace)
 {
+    gint pos;
+    gint openingTagsCount = 0;
+    gint closingTagsCount = 1;
+
+    for (pos=openingBrace; pos>0; pos--)
+    {
+        /* are we inside tag? */
+        gint lineNumber = sci_get_line_from_position(sci, pos);
+        gint lineStart = sci_get_position_from_line(sci, lineNumber);
+        gint matchingOpeningBrace = findBrace(pos, lineStart, '<', NULL, FALSE);
+        gint matchingClosingBrace = findBrace(pos, lineStart, '>', NULL, FALSE);
+
+        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
+        {
+            /* we are inside of some tag. Let us check what tag*/
+            gchar matchingTagName[64];
+            gboolean isMatchingTagOpening = is_tag_opening(matchingOpeningBrace);
+            get_tag_name(matchingOpeningBrace, matchingClosingBrace, matchingTagName, isMatchingTagOpening);
+            if (strcmp(tagName, matchingTagName) == 0)
+            {
+                if (TRUE == isMatchingTagOpening)
+                    openingTagsCount++;
+                else
+                    closingTagsCount++;
+            }
+            pos = matchingOpeningBrace+1;
+        }
+        /* Speed up search: if findBrace returns -1, that means start of line
+         * is reached. There is no need to go through the same positions again.
+         * Jump to the start of line */
+        else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
+        {
+            pos = lineStart;
+            continue;
+        }
+        if(openingTagsCount == closingTagsCount)
+        {
+            /* matching tag is found */
+            highlight_tag(matchingOpeningBrace, matchingClosingBrace);
+            highlightedBraces[2] = matchingOpeningBrace;
+            highlightedBraces[3] = matchingClosingBrace;
+            break;
+        }
+    }
 }
 
 void findMatchingClosingTag(gchar *tagName, gint closingBrace)
@@ -187,8 +231,8 @@ void findMatchingTag(openingBrace, closingBrace)
 
     if(TRUE == isTagOpening)
         findMatchingClosingTag(tagName, closingBrace);
-    //else
-    //    findMatchingClosingTag(tagName, openingBrace, closingBrace);
+    else
+        findMatchingOpeningTag(tagName, openingBrace);
 }
 
 void run_tag_highlighter()
