@@ -246,11 +246,11 @@ void run_tag_highlighter()
 
     if (-1 == openingBrace || -1 == closingBrace)
     {
+        clear_previous_highlighting(highlightedBraces[0], highlightedBraces[1]);
+        clear_previous_highlighting(highlightedBraces[2], highlightedBraces[3]);
         int i;
         for (i=0; i<3; i++)
             highlightedBraces[i] = 0;
-        clear_previous_highlighting(highlightedBraces[0], highlightedBraces[1]);
-        clear_previous_highlighting(highlightedBraces[2], highlightedBraces[3]);
         return;
     }
 
