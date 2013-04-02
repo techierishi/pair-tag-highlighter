@@ -137,12 +137,14 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace)
         gint matchingOpeningBrace = findBrace(pos, lineStart, '<', NULL, FALSE);
         gint matchingClosingBrace = findBrace(pos, lineStart, '>', NULL, FALSE);
 
-        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
+        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace 
+            && (matchingClosingBrace > matchingOpeningBrace))
         {
             /* we are inside of some tag. Let us check what tag*/
             gchar matchingTagName[64];
             gboolean isMatchingTagOpening = is_tag_opening(matchingOpeningBrace);
-            get_tag_name(matchingOpeningBrace, matchingClosingBrace, matchingTagName, isMatchingTagOpening);
+            get_tag_name(matchingOpeningBrace, matchingClosingBrace,
+                            matchingTagName, isMatchingTagOpening);
             if (strcmp(tagName, matchingTagName) == 0)
             {
                 if (TRUE == isMatchingTagOpening)
@@ -187,12 +189,14 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
         gint matchingOpeningBrace = findBrace(pos, lineEnd, '<', NULL, TRUE);
         gint matchingClosingBrace = findBrace(pos, lineEnd, '>', NULL, TRUE);
 
-        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace && (matchingClosingBrace > matchingOpeningBrace))
+        if (-1 != matchingOpeningBrace && -1 != matchingClosingBrace
+            && (matchingClosingBrace > matchingOpeningBrace))
         {
             /* we are inside of some tag. Let us check what tag*/
             gchar matchingTagName[64];
             gboolean isMatchingTagOpening = is_tag_opening(matchingOpeningBrace);
-            get_tag_name(matchingOpeningBrace, matchingClosingBrace, matchingTagName, isMatchingTagOpening);
+            get_tag_name(matchingOpeningBrace, matchingClosingBrace,
+                            matchingTagName, isMatchingTagOpening);
             if (strcmp(tagName, matchingTagName) == 0)
             {
                 if (TRUE == isMatchingTagOpening)
@@ -254,6 +258,8 @@ void run_tag_highlighter()
         return;
     }
 
+    /* If the cursor jumps from one tag into another, clear
+     * previous highlighted tags*/
     if (openingBrace != highlightedBraces[0] ||
         closingBrace != highlightedBraces[1])
     {
