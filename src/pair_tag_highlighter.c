@@ -130,7 +130,6 @@ void findMatchingOpeningTag(gchar *tagName, gint openingBrace, gint closingBrace
 void findMatchingClosingTag(gchar *tagName, gint closingBrace)
 {
     gint pos;
-    gint lineNumber = sci_get_current_line(sci);
     gint linesInDocument = sci_get_line_count(sci);
     gint endOfDocument = sci_get_position_from_line(sci, linesInDocument);
     gint openingTagsCount = 1;
@@ -156,6 +155,15 @@ void findMatchingClosingTag(gchar *tagName, gint closingBrace)
                     closingTagsCount++;
             }
             pos = matchingClosingBrace;
+        }
+        /* Speed up search: if findBrace returns -1, that means end of line
+         * is reached. Jump to the end of line */
+        else if (-1 == matchingOpeningBrace && -1 == matchingClosingBrace)
+        {
+            gint lineNumber = sci_get_line_from_position(sci, pos);
+            gint lineEnd = sci_get_line_end_position(sci, lineNumber);
+            pos = lineEnd;
+            continue;
         }
         if(openingTagsCount == closingTagsCount)
         {
