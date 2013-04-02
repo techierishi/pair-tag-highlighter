@@ -51,7 +51,7 @@ gint findBrace(gint position, gint endOfSearchPos, gchar searchedBrace,
     else
     {
         /* search to the left */
-        for(pos=position; pos>=endOfSearchPos; pos--)
+        for(pos=position-1; pos>=endOfSearchPos; pos--)
         {
             gchar charAtCurPosition = sci_get_char_at(sci, pos);
             if (charAtCurPosition == searchedBrace)
