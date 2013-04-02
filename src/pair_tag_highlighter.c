@@ -331,4 +331,6 @@ void plugin_init(GeanyData *data)
 
 void plugin_cleanup(void)
 {
+    clear_previous_highlighting(highlightedBrackets[0], highlightedBrackets[1]);
+    clear_previous_highlighting(highlightedBrackets[2], highlightedBrackets[3]);
 }
